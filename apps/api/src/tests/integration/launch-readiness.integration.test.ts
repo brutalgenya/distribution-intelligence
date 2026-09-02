@@ -80,6 +80,13 @@ describe.runIf(hasTestDatabase)("Phase 12 launch readiness", () => {
   });
 
   it("exposes live, ready, and health endpoints and rate-limits sensitive billing mutations", async () => {
+    const basicHealthResponse = await app.inject({
+      method: "GET",
+      url: "/healthz",
+    });
+    expect(basicHealthResponse.statusCode).toBe(200);
+    expect(basicHealthResponse.json()).toEqual({ status: "ok" });
+
     const liveResponse = await app.inject({
       method: "GET",
       url: "/observability/live",

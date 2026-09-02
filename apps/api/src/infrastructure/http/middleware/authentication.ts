@@ -8,12 +8,24 @@ import { UnauthorizedError } from "../../../shared/errors.js";
 
 const uuidHeaderSchema = z.string().uuid();
 
+const publicHealthRoutes = new Set([
+  "/healthz",
+  "/observability/health",
+  "/observability/live",
+  "/observability/ready",
+]);
+
 const getSingleHeader = (value: string | string[] | undefined): string | undefined =>
   Array.isArray(value) ? value[0] : value;
 
 export const authenticationMiddleware = async (request: FastifyRequest): Promise<void> => {
   const rawCorrelationId = getSingleHeader(request.headers["x-correlation-id"]);
   const rawTraceId = getSingleHeader(request.headers["x-trace-id"]);
+
+  const routePath = request.routeOptions.url ?? request.url.split("?", 1)[0];
+  if (request.method === "GET" && publicHealthRoutes.has(routePath)) {
+    return;
+  }
 
   if (request.url.startsWith("/billing/webhooks/stripe")) {
     request.requestContext = {
