@@ -1,7 +1,7 @@
 import { PlanSubscriptionStatus, PrismaClient, RoleCode } from "@prisma/client";
 
 import { ensureBillingPlans, ensurePlatformRoles } from "../../infrastructure/db/bootstrap-data.js";
-import { DEFAULT_BILLING_PLAN_CODE } from "../../modules/billing/billing.constants.js";
+import { DEFAULT_DEMO_BILLING_PLAN_CODE } from "../../modules/billing/billing.constants.js";
 import { normalizeEmail } from "../../shared/strings.js";
 import { getTestDatabaseUrl } from "./test-config.js";
 
@@ -72,7 +72,7 @@ export const createOrganizationWithMembership = async (
 
   const starterPlan = await prisma.billingPlan.findFirstOrThrow({
     where: {
-      code: DEFAULT_BILLING_PLAN_CODE,
+      code: DEFAULT_DEMO_BILLING_PLAN_CODE,
       status: "active",
     },
     orderBy: [{ version: "desc" }, { updatedAt: "desc" }],
