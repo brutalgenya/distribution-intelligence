@@ -103,43 +103,43 @@ CREATE TABLE "policy_effectiveness_summaries" (
   CONSTRAINT "policy_effectiveness_summaries_pkey" PRIMARY KEY ("id")
 );
 
-CREATE UNIQUE INDEX "decision_outcomes_organizationId_decisionId_measurementWindowStart_measurementWindowEnd_key"
+CREATE UNIQUE INDEX "do_scope_window_uq"
   ON "decision_outcomes"("organizationId", "decisionId", "measurementWindowStart", "measurementWindowEnd");
-CREATE UNIQUE INDEX "stockout_incidents_organizationId_skuId_locationId_incidentStartAt_sourceType_key"
+CREATE UNIQUE INDEX "si_scope_start_source_uq"
   ON "stockout_incidents"("organizationId", "skuId", "locationId", "incidentStartAt", "sourceType");
-CREATE UNIQUE INDEX "fill_rate_measurements_organizationId_skuId_locationId_measurementWindowStart_measurementWindowEnd_key"
+CREATE UNIQUE INDEX "frm_scope_window_uq"
   ON "fill_rate_measurements"("organizationId", "skuId", "locationId", "measurementWindowStart", "measurementWindowEnd");
-CREATE UNIQUE INDEX "forecast_error_measurements_organizationId_forecastJobId_skuId_locationId_measurementWindowStart_measurementWindowEnd_key"
+CREATE UNIQUE INDEX "fem_scope_window_uq"
   ON "forecast_error_measurements"("organizationId", "forecastJobId", "skuId", "locationId", "measurementWindowStart", "measurementWindowEnd");
-CREATE UNIQUE INDEX "inventory_cost_snapshots_organizationId_skuId_locationId_snapshotAt_key"
+CREATE UNIQUE INDEX "ics_scope_snapshot_uq"
   ON "inventory_cost_snapshots"("organizationId", "skuId", "locationId", "snapshotAt");
-CREATE UNIQUE INDEX "policy_effectiveness_summaries_organizationId_policyId_policyVersion_scopeType_measurementWindowStart_measurementWindowEnd_key"
+CREATE UNIQUE INDEX "pes_policy_scope_window_uq"
   ON "policy_effectiveness_summaries"("organizationId", "policyId", "policyVersion", "scopeType", "measurementWindowStart", "measurementWindowEnd");
 
-CREATE INDEX "decision_outcomes_organizationId_decisionId_idx"
+CREATE INDEX "do_decision_idx"
   ON "decision_outcomes"("organizationId", "decisionId");
-CREATE INDEX "decision_outcomes_organizationId_measurementWindowEnd_idx"
+CREATE INDEX "do_window_end_idx"
   ON "decision_outcomes"("organizationId", "measurementWindowEnd");
 
-CREATE INDEX "stockout_incidents_organizationId_detectedAt_idx"
+CREATE INDEX "si_detected_idx"
   ON "stockout_incidents"("organizationId", "detectedAt");
-CREATE INDEX "stockout_incidents_organizationId_skuId_locationId_incidentEndAt_idx"
+CREATE INDEX "si_scope_end_idx"
   ON "stockout_incidents"("organizationId", "skuId", "locationId", "incidentEndAt");
 
-CREATE INDEX "fill_rate_measurements_organizationId_skuId_locationId_measurementWindowEnd_idx"
+CREATE INDEX "frm_scope_window_end_idx"
   ON "fill_rate_measurements"("organizationId", "skuId", "locationId", "measurementWindowEnd");
 
-CREATE INDEX "forecast_error_measurements_organizationId_forecastJobId_idx"
+CREATE INDEX "fem_job_idx"
   ON "forecast_error_measurements"("organizationId", "forecastJobId");
-CREATE INDEX "forecast_error_measurements_organizationId_skuId_locationId_measurementWindowEnd_idx"
+CREATE INDEX "fem_scope_window_end_idx"
   ON "forecast_error_measurements"("organizationId", "skuId", "locationId", "measurementWindowEnd");
 
-CREATE INDEX "inventory_cost_snapshots_organizationId_snapshotAt_idx"
+CREATE INDEX "ics_org_snapshot_idx"
   ON "inventory_cost_snapshots"("organizationId", "snapshotAt");
-CREATE INDEX "inventory_cost_snapshots_organizationId_skuId_locationId_snapshotAt_idx"
+CREATE INDEX "ics_scope_snapshot_idx"
   ON "inventory_cost_snapshots"("organizationId", "skuId", "locationId", "snapshotAt");
 
-CREATE INDEX "policy_effectiveness_summaries_organizationId_policyId_measurementWindowEnd_idx"
+CREATE INDEX "pes_policy_window_end_idx"
   ON "policy_effectiveness_summaries"("organizationId", "policyId", "measurementWindowEnd");
 
 ALTER TABLE "decision_outcomes"

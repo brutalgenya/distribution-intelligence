@@ -1331,9 +1331,9 @@ model DecisionOutcome {
   decision               Decision              @relation(fields: [decisionId], references: [id], onDelete: Cascade)
   executionTask          ExecutionTask?        @relation(fields: [executionTaskId], references: [id], onDelete: SetNull)
 
-  @@unique([organizationId, decisionId, measurementWindowStart, measurementWindowEnd])
-  @@index([organizationId, decisionId])
-  @@index([organizationId, measurementWindowEnd])
+  @@unique([organizationId, decisionId, measurementWindowStart, measurementWindowEnd], map: "do_scope_window_uq")
+  @@index([organizationId, decisionId], map: "do_decision_idx")
+  @@index([organizationId, measurementWindowEnd], map: "do_window_end_idx")
   @@map("decision_outcomes")
 }
 
@@ -1354,9 +1354,9 @@ model StockoutIncident {
   sku             Sku          @relation(fields: [skuId], references: [id], onDelete: Cascade)
   location        Location     @relation(fields: [locationId], references: [id], onDelete: Cascade)
 
-  @@unique([organizationId, skuId, locationId, incidentStartAt, sourceType])
-  @@index([organizationId, detectedAt])
-  @@index([organizationId, skuId, locationId, incidentEndAt])
+  @@unique([organizationId, skuId, locationId, incidentStartAt, sourceType], map: "si_scope_start_source_uq")
+  @@index([organizationId, detectedAt], map: "si_detected_idx")
+  @@index([organizationId, skuId, locationId, incidentEndAt], map: "si_scope_end_idx")
   @@map("stockout_incidents")
 }
 
@@ -1400,9 +1400,9 @@ model ForecastErrorMeasurement {
   sku                    Sku          @relation(fields: [skuId], references: [id], onDelete: Cascade)
   location               Location?    @relation(fields: [locationId], references: [id], onDelete: SetNull)
 
-  @@unique([organizationId, forecastJobId, skuId, locationId, measurementWindowStart, measurementWindowEnd])
-  @@index([organizationId, forecastJobId])
-  @@index([organizationId, skuId, locationId, measurementWindowEnd])
+  @@unique([organizationId, forecastJobId, skuId, locationId, measurementWindowStart, measurementWindowEnd], map: "fem_scope_window_uq")
+  @@index([organizationId, forecastJobId], map: "fem_job_idx")
+  @@index([organizationId, skuId, locationId, measurementWindowEnd], map: "fem_scope_window_end_idx")
   @@map("forecast_error_measurements")
 }
 
@@ -1423,6 +1423,7 @@ model InventoryCostSnapshot {
 
   @@unique([organizationId, skuId, locationId, snapshotAt], map: "ics_scope_snapshot_uq")
   @@index([organizationId, snapshotAt], map: "ics_org_snapshot_idx")
+  @@index([organizationId, skuId, locationId, snapshotAt], map: "ics_scope_snapshot_idx")
   @@map("inventory_cost_snapshots")
 }
 
@@ -1446,8 +1447,8 @@ model PolicyEffectivenessSummary {
   organization           Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   policy                 Policy           @relation(fields: [policyId], references: [id], onDelete: Cascade)
 
-  @@unique([organizationId, policyId, policyVersion, scopeType, measurementWindowStart, measurementWindowEnd])
-  @@index([organizationId, policyId, measurementWindowEnd])
+  @@unique([organizationId, policyId, policyVersion, scopeType, measurementWindowStart, measurementWindowEnd], map: "pes_policy_scope_window_uq")
+  @@index([organizationId, policyId, measurementWindowEnd], map: "pes_policy_window_end_idx")
   @@map("policy_effectiveness_summaries")
 }
 
