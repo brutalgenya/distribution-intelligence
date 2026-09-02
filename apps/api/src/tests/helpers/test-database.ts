@@ -78,13 +78,16 @@ export const createOrganizationWithMembership = async (
     orderBy: [{ version: "desc" }, { updatedAt: "desc" }],
   });
 
+  const currentPeriodStart = new Date();
+  const currentPeriodEnd = new Date(currentPeriodStart.getTime() + 30 * 24 * 60 * 60 * 1000);
+
   await prisma.planSubscription.create({
     data: {
       organizationId: organization.id,
       billingPlanId: starterPlan.id,
       status: PlanSubscriptionStatus.trialing,
-      currentPeriodStart: new Date("2026-03-01T00:00:00.000Z"),
-      currentPeriodEnd: new Date("2026-04-01T00:00:00.000Z"),
+      currentPeriodStart,
+      currentPeriodEnd,
       createdByUserId: input.userId,
     },
   });

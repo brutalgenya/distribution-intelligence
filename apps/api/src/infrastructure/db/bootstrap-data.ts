@@ -466,6 +466,9 @@ export const seedDemoTenant = async (prisma: PrismaClient): Promise<DemoSeedResu
     orderBy: [{ version: "desc" }, { updatedAt: "desc" }],
   });
 
+  const currentPeriodStart = new Date();
+  const currentPeriodEnd = new Date(currentPeriodStart.getTime() + 30 * 24 * 60 * 60 * 1000);
+
   const planSubscription = await prisma.planSubscription.upsert({
     where: {
       organizationId: organization.id,
@@ -473,8 +476,8 @@ export const seedDemoTenant = async (prisma: PrismaClient): Promise<DemoSeedResu
     update: {
       billingPlanId: demoBillingPlan.id,
       status: PlanSubscriptionStatus.active,
-      currentPeriodStart: new Date("2026-03-01T00:00:00.000Z"),
-      currentPeriodEnd: new Date("2026-04-01T00:00:00.000Z"),
+      currentPeriodStart,
+      currentPeriodEnd,
       stripeCustomerId: "cus_demo_wholesale",
       stripeSubscriptionId: "sub_demo_wholesale",
       cancelAtPeriodEnd: false,
@@ -484,8 +487,8 @@ export const seedDemoTenant = async (prisma: PrismaClient): Promise<DemoSeedResu
       organizationId: organization.id,
       billingPlanId: demoBillingPlan.id,
       status: PlanSubscriptionStatus.active,
-      currentPeriodStart: new Date("2026-03-01T00:00:00.000Z"),
-      currentPeriodEnd: new Date("2026-04-01T00:00:00.000Z"),
+      currentPeriodStart,
+      currentPeriodEnd,
       stripeCustomerId: "cus_demo_wholesale",
       stripeSubscriptionId: "sub_demo_wholesale",
       cancelAtPeriodEnd: false,
