@@ -1,0 +1,15 @@
+{
+  "name": "distribution-intelligence",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Portfolio prototype for multi-tenant inventory decision workflows.",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "install:all": "npm ci --prefix apps/api && npm ci --prefix apps/web",
+    "build": "npm run build --prefix apps/api && npm run build --prefix apps/web",
+    "typecheck": "npm run typecheck --prefix apps/api && npm run typecheck --prefix apps/web",
+    "test": "npm run test:unit --prefix apps/api"
+  }
+}

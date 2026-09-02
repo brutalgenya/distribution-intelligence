@@ -1,0 +1,42 @@
+{
+  "name": "@distribution-intelligence/api",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "dev": "tsx watch src/main.ts",
+    "start": "node dist/main.js",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate dev",
+    "prisma:migrate:deploy": "prisma migrate deploy",
+    "prisma:seed": "tsx prisma/seed.ts",
+    "bootstrap:demo": "tsx prisma/seed.ts",
+    "test": "vitest run",
+    "test:unit": "vitest run src/tests/unit",
+    "test:integration": "vitest run src/tests/integration --maxWorkers=1",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "worker:forecast": "tsx src/workers/process-forecast-jobs.ts",
+    "worker:execution": "tsx src/workers/process-execution-tasks.ts",
+    "worker:outcomes": "tsx src/workers/process-outcomes.ts",
+    "worker:integration": "tsx src/workers/process-integration-syncs.ts"
+  },
+  "dependencies": {
+    "@fastify/sensible": "^6.0.4",
+    "@prisma/client": "^6.6.0",
+    "dotenv": "^16.4.5",
+    "fastify": "^5.2.1",
+    "papaparse": "^5.5.3",
+    "pino": "^9.6.0",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "@types/papaparse": "^5.3.16",
+    "prisma": "^6.6.0",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.2",
+    "vitest": "^3.1.1"
+  }
+}

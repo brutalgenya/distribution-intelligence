@@ -1,0 +1,19 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: distribution_intelligence
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d distribution_intelligence"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - distribution-intelligence-data:/var/lib/postgresql/data
+
+volumes:
+  distribution-intelligence-data:
