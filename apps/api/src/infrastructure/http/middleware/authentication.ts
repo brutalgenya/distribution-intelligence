@@ -22,7 +22,7 @@ export const authenticationMiddleware = async (request: FastifyRequest): Promise
   const rawCorrelationId = getSingleHeader(request.headers["x-correlation-id"]);
   const rawTraceId = getSingleHeader(request.headers["x-trace-id"]);
 
-  const routePath = request.routeOptions.url ?? request.url.split("?", 1)[0];
+  const routePath = request.routeOptions.url ?? request.url.split("?", 1)[0] ?? request.url;
   if (request.method === "GET" && publicHealthRoutes.has(routePath)) {
     return;
   }
