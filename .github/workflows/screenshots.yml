@@ -97,53 +97,36 @@ jobs:
         run: |
           chrome="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium)"
           test -n "$chrome"
-          mkdir -p docs/screenshots
+          "$chrome" \
+            --headless=new \
+            --no-sandbox \
+            --disable-gpu \
+            --disable-dev-shm-usage \
+            --disable-background-networking \
+            --disable-component-update \
+            --disable-default-apps \
+            --disable-extensions \
+            --disable-features=MediaRouter,OptimizationGuideModelDownloading,OptimizationHints,OptimizationTargetPrediction,Translate \
+            --disable-sync \
+            --hide-scrollbars \
+            --metrics-recording-only \
+            --no-default-browser-check \
+            --no-first-run \
+            --remote-debugging-address=127.0.0.1 \
+            --remote-debugging-port=9222 \
+            --user-data-dir="$RUNNER_TEMP/chrome-profile" \
+            about:blank > "$RUNNER_TEMP/chrome.log" 2>&1 &
 
-          capture() {
-            local route="$1"
-            local filename="$2"
-            local output="docs/screenshots/$filename"
-            local profile="$RUNNER_TEMP/chrome-${filename%.png}"
-            local status=0
-
-            mkdir -p "$profile"
-            timeout 45s "$chrome" \
-              --headless=new \
-              --no-sandbox \
-              --disable-gpu \
-              --disable-dev-shm-usage \
-              --disable-background-networking \
-              --disable-background-timer-throttling \
-              --disable-component-update \
-              --disable-default-apps \
-              --disable-extensions \
-              --disable-features=MediaRouter,OptimizationGuideModelDownloading,OptimizationHints,OptimizationTargetPrediction,Translate \
-              --disable-sync \
-              --hide-scrollbars \
-              --metrics-recording-only \
-              --no-default-browser-check \
-              --no-first-run \
-              --run-all-compositor-stages-before-draw \
-              --user-data-dir="$profile" \
-              --window-size=1600,1000 \
-              --force-device-scale-factor=1 \
-              --virtual-time-budget=6000 \
-              --screenshot="$output" \
-              "http://127.0.0.1:5173/$route" || status=$?
-
-            if [ "$status" -ne 0 ] && [ "$status" -ne 124 ]; then
-              return "$status"
+          for attempt in {1..30}; do
+            if curl --fail --silent http://127.0.0.1:9222/json/version > /dev/null; then
+              node scripts/capture-screenshots.mjs
+              exit 0
             fi
+            sleep 1
+          done
 
-            test -s "$output"
-          }
-
-          capture overview overview.png
-          capture decisions decision-inbox.png
-          capture workflow workflow-operations.png
-          capture data-ops data-forecast-ops.png
-
-          test "$(find docs/screenshots -type f -name '*.png' -size +20k | wc -l)" -eq 4
+          cat "$RUNNER_TEMP/chrome.log"
+          exit 1
 
       - name: Upload screenshot pack
         uses: actions/upload-artifact@v7
@@ -158,3 +141,4 @@ jobs:
         run: |
           cat "$RUNNER_TEMP/api.log" 2>/dev/null || true
           cat "$RUNNER_TEMP/web.log" 2>/dev/null || true
+          cat "$RUNNER_TEMP/chrome.log" 2>/dev/null || true
