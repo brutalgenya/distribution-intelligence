@@ -58,17 +58,29 @@ describe.runIf(hasTestDatabase)("Tenant foundation integration", () => {
     const entitlementCount = await prisma.entitlement.count({
       where: { organizationId: body.organization.id },
     });
-    const auditCount = await prisma.auditEvent.count({
+    const auditEvents = await prisma.auditEvent.findMany({
       where: { organizationId: body.organization.id },
+      select: { eventType: true },
+      orderBy: { eventType: "asc" },
     });
-    const outboxCount = await prisma.outboxEvent.count({
+    const outboxEvents = await prisma.outboxEvent.findMany({
       where: { organizationId: body.organization.id },
+      select: { eventType: true },
+      orderBy: { eventType: "asc" },
     });
 
     expect(membershipCount).toBe(1);
     expect(entitlementCount).toBe(3);
-    expect(auditCount).toBe(1);
-    expect(outboxCount).toBe(1);
+    expect(auditEvents.map(({ eventType }) => eventType)).toEqual([
+      "billing.subscription.created",
+      "billing.usage.recorded",
+      "organization.created",
+    ]);
+    expect(outboxEvents.map(({ eventType }) => eventType)).toEqual([
+      "billing.subscription.created.v1",
+      "billing.usage.recorded.v1",
+      "organization.created",
+    ]);
   });
 
   it("supports invitation creation, acceptance, and membership listing", async () => {
