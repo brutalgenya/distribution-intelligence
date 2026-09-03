@@ -367,10 +367,16 @@ describe.runIf(hasTestDatabase)("Demand and forecasting integration", () => {
       name: "Main Warehouse",
     });
 
+    const forecastAnchorDate = new Date();
+    forecastAnchorDate.setUTCHours(0, 0, 0, 0);
+    forecastAnchorDate.setUTCDate(forecastAnchorDate.getUTCDate() - 1);
+
     const importRows = ["skuCode,locationCode,quantity,soldAt,sourceReference"];
     for (let day = 0; day < 14; day += 1) {
       const dayNumber = String(day + 1).padStart(2, "0");
-      importRows.push(`FRC-001,MAIN,2,2026-03-${dayNumber}T00:00:00.000Z,SALE-${dayNumber}`);
+      const soldAt = new Date(forecastAnchorDate);
+      soldAt.setUTCDate(forecastAnchorDate.getUTCDate() - (13 - day));
+      importRows.push(`FRC-001,MAIN,2,${soldAt.toISOString()},SALE-${dayNumber}`);
     }
 
     const importResponse = await app.inject({
