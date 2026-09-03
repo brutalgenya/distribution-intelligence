@@ -1,0 +1,135 @@
+name: Capture demo screenshots
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/screenshots.yml
+
+permissions:
+  contents: read
+
+jobs:
+  screenshots:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: distribution_intelligence_demo
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d distribution_intelligence_demo"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      APP_ENV: local
+      NODE_ENV: development
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/distribution_intelligence_demo
+      BILLING_PROVIDER: mock
+      DEMO_BOOTSTRAP_ENABLED: true
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            apps/api/package-lock.json
+            apps/web/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          npm ci --prefix apps/api
+          npm ci --prefix apps/web
+
+      - name: Prepare demo database
+        run: |
+          npm run prisma:generate --prefix apps/api
+          npm run prisma:migrate:deploy --prefix apps/api
+
+      - name: Seed demo tenant
+        id: seed
+        shell: bash
+        run: |
+          npm run --silent bootstrap:demo --prefix apps/api > "$RUNNER_TEMP/demo-seed.json"
+          user_id="$(jq -r '.ownerUserId' "$RUNNER_TEMP/demo-seed.json")"
+          organization_id="$(jq -r '.organizationId' "$RUNNER_TEMP/demo-seed.json")"
+          test "$user_id" != "null"
+          test "$organization_id" != "null"
+          echo "user_id=$user_id" >> "$GITHUB_OUTPUT"
+          echo "organization_id=$organization_id" >> "$GITHUB_OUTPUT"
+
+      - name: Start API and web app
+        env:
+          VITE_API_BASE_URL: /api
+          VITE_API_PROXY_TARGET: http://127.0.0.1:4000
+          VITE_DEMO_USER_ID: ${{ steps.seed.outputs.user_id }}
+          VITE_DEMO_ORGANIZATION_ID: ${{ steps.seed.outputs.organization_id }}
+        shell: bash
+        run: |
+          npm run dev --prefix apps/api > "$RUNNER_TEMP/api.log" 2>&1 &
+          npm run dev --prefix apps/web -- --host 127.0.0.1 > "$RUNNER_TEMP/web.log" 2>&1 &
+
+          for attempt in {1..60}; do
+            if curl --fail --silent http://127.0.0.1:4000/healthz > /dev/null \
+              && curl --fail --silent http://127.0.0.1:5173/overview > /dev/null; then
+              exit 0
+            fi
+            sleep 1
+          done
+
+          echo "API log:"
+          cat "$RUNNER_TEMP/api.log"
+          echo "Web log:"
+          cat "$RUNNER_TEMP/web.log"
+          exit 1
+
+      - name: Capture application screens
+        shell: bash
+        run: |
+          chrome="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium)"
+          test -n "$chrome"
+          mkdir -p docs/screenshots
+
+          capture() {
+            local route="$1"
+            local filename="$2"
+            "$chrome" \
+              --headless=new \
+              --no-sandbox \
+              --disable-gpu \
+              --hide-scrollbars \
+              --window-size=1600,1000 \
+              --force-device-scale-factor=1 \
+              --virtual-time-budget=12000 \
+              --screenshot="docs/screenshots/$filename" \
+              "http://127.0.0.1:5173/$route"
+          }
+
+          capture overview overview.png
+          capture decisions decision-inbox.png
+          capture workflow workflow-operations.png
+          capture data-ops data-forecast-ops.png
+
+          test "$(find docs/screenshots -type f -name '*.png' -size +20k | wc -l)" -eq 4
+
+      - name: Upload screenshot pack
+        uses: actions/upload-artifact@v7
+        with:
+          name: distribution-intelligence-screenshots
+          path: docs/screenshots/*.png
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Show application logs on failure
+        if: failure()
+        run: |
+          cat "$RUNNER_TEMP/api.log" 2>/dev/null || true
+          cat "$RUNNER_TEMP/web.log" 2>/dev/null || true
