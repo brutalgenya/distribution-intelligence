@@ -5,13 +5,14 @@ const appUrl = process.env.SCREENSHOT_BASE_URL ?? "http://127.0.0.1:5173";
 const outputDirectory = "docs/screenshots";
 
 const targets = [
-  ["overview", "overview.png"],
+  ["overview", "overview.png", 1000],
   [
     "decisions?decisionId=00000000-0000-0000-0000-00000000d501",
     "decision-inbox.png",
+    1200,
   ],
-  ["workflow", "workflow-operations.png"],
-  ["data-ops", "data-forecast-ops.png"],
+  ["workflow", "workflow-operations.png", 1000],
+  ["data-ops", "data-forecast-ops.png", 1000],
 ];
 
 const delay = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds));
@@ -100,7 +101,13 @@ await command("Emulation.setDeviceMetricsOverride", {
 });
 await mkdir(outputDirectory, { recursive: true });
 
-for (const [route, filename] of targets) {
+for (const [route, filename, viewportHeight] of targets) {
+  await command("Emulation.setDeviceMetricsOverride", {
+    width: 1600,
+    height: viewportHeight,
+    deviceScaleFactor: 1,
+    mobile: false,
+  });
   const loaded = nextEvent("Page.loadEventFired");
   await command("Page.navigate", { url: `${appUrl}/${route}` });
   await withTimeout(loaded, 15_000, `/${route} to load`);
