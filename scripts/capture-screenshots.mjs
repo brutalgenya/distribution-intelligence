@@ -6,7 +6,10 @@ const outputDirectory = "docs/screenshots";
 
 const targets = [
   ["overview", "overview.png"],
-  ["decisions", "decision-inbox.png"],
+  [
+    "decisions?decisionId=00000000-0000-0000-0000-00000000d501",
+    "decision-inbox.png",
+  ],
   ["workflow", "workflow-operations.png"],
   ["data-ops", "data-forecast-ops.png"],
 ];
