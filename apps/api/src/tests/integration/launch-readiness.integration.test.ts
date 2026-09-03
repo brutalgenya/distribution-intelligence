@@ -268,6 +268,15 @@ describe.runIf(hasTestDatabase)("Phase 12 launch readiness", () => {
     });
     expect(supplierSkuResponse.statusCode).toBe(201);
 
+    const forecastAnchorDate = new Date();
+    forecastAnchorDate.setUTCHours(10, 0, 0, 0);
+    forecastAnchorDate.setUTCDate(forecastAnchorDate.getUTCDate() - 1);
+    const recentSaleDates = [2, 1, 0].map((daysBeforeAnchor) => {
+      const soldAt = new Date(forecastAnchorDate);
+      soldAt.setUTCDate(forecastAnchorDate.getUTCDate() - daysBeforeAnchor);
+      return soldAt.toISOString();
+    });
+
     const demandSync = await createSyncRun(app, owner.id, organization.id, {
       connectionId: connection.id,
       syncType: "demand_import",
@@ -281,7 +290,7 @@ describe.runIf(hasTestDatabase)("Phase 12 launch readiness", () => {
               skuCode: "LAUNCH-SKU-001",
               locationCode: "LAUNCH-WH-001",
               quantity: 20,
-              soldAt: "2026-03-20T10:00:00.000Z",
+              soldAt: recentSaleDates[0],
               sourceType: "integration_import",
             },
           },
@@ -292,7 +301,7 @@ describe.runIf(hasTestDatabase)("Phase 12 launch readiness", () => {
               skuCode: "LAUNCH-SKU-001",
               locationCode: "LAUNCH-WH-001",
               quantity: 22,
-              soldAt: "2026-03-21T10:00:00.000Z",
+              soldAt: recentSaleDates[1],
               sourceType: "integration_import",
             },
           },
@@ -303,7 +312,7 @@ describe.runIf(hasTestDatabase)("Phase 12 launch readiness", () => {
               skuCode: "LAUNCH-SKU-001",
               locationCode: "LAUNCH-WH-001",
               quantity: 24,
-              soldAt: "2026-03-22T10:00:00.000Z",
+              soldAt: recentSaleDates[2],
               sourceType: "integration_import",
             },
           },
