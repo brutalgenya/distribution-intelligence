@@ -1,7 +1,11 @@
 import {
+  ApprovalTaskPurpose,
+  ApprovalTaskStatus,
   AiModelType,
   AutomationTier,
   CustomerOrderStatus,
+  DecisionStatus,
+  DecisionType,
   DemandSignalType,
   PlanSubscriptionStatus,
   ModelRegistryStatus,
@@ -21,6 +25,10 @@ import {
   DEFAULT_BILLING_PLAN_DEFINITIONS,
   DEFAULT_DEMO_BILLING_PLAN_CODE,
 } from "../../modules/billing/billing.constants.js";
+import {
+  DecisionArtifactTypes,
+  DecisionReasonCodes,
+} from "../../modules/decisioning/decisioning.constants.js";
 
 const PLATFORM_ROLES: Array<{ code: RoleCode; name: string; description: string }> = [
   { code: RoleCode.owner, name: "Owner", description: "Full tenant control" },
@@ -114,6 +122,9 @@ export interface DemoSeedResult {
 }
 
 const DEMO_SALES_IMPORT_RUN_ID = "00000000-0000-0000-0000-00000000d001";
+const DEMO_REPLENISHMENT_DECISION_ID = "00000000-0000-0000-0000-00000000d501";
+const DEMO_REPLENISHMENT_APPROVAL_ID = "00000000-0000-0000-0000-00000000d601";
+const DEMO_REPLENISHMENT_RECORDED_AT = new Date("2026-08-28T09:30:00.000Z");
 
 const seedDemoOperationalState = async (
   prisma: PrismaClient,
@@ -388,6 +399,228 @@ const seedDemoOperationalState = async (
     customerOrderId: customerOrder.id,
     purchaseOrderId: purchaseOrder.id,
   };
+};
+
+const seedDemoReplenishmentDecision = async (
+  prisma: PrismaClient,
+  input: {
+    organizationId: string;
+    ownerUserId: string;
+    skuId: string;
+    locationId: string;
+    supplierId: string;
+    supplierSkuId: string;
+    replenishmentPolicyId: string;
+  },
+): Promise<void> => {
+  const reasonCodes = [
+    DecisionReasonCodes.forecastExceedsAvailableSupply,
+    DecisionReasonCodes.openPurchaseOrderInsufficient,
+  ];
+  const proposedPayload = {
+    skuId: input.skuId,
+    locationId: input.locationId,
+    supplierId: input.supplierId,
+    recommendedOrderQty: 96,
+    unitOfMeasure: "each",
+    expectedLeadTimeDays: 7,
+    projectedDaysOfCover: 18.42,
+    projectedShortfallQty: 90,
+    basisDate: "2026-08-28T00:00:00.000Z",
+    recommendationType: "purchase_order",
+    recommendationSummary:
+      "Order 96 units from Demo Supply Co to protect stock coverage at Main Warehouse.",
+  } satisfies Prisma.InputJsonObject;
+  const rationale = {
+    summary:
+      "Forecast demand and the current inbound purchase order leave a 90-unit projected shortfall; ordering eight 12-unit cases closes the gap.",
+    reasonCodes,
+    forecastQty: 114,
+    forecastHorizonDays: 14,
+    dailyAverageForecastQty: 8.14,
+    availableToPromiseQty: 102,
+    openPurchaseOrderQty: 48,
+    reorderPointQty: 40,
+    safetyStockQty: 20,
+    requiredQty: 240,
+    projectedAvailableQty: 150,
+    projectedShortfallQty: 90,
+    leadTimeDaysUsed: 7,
+    targetDaysOfCover: 14,
+    casePackQty: 12,
+  } satisfies Prisma.InputJsonObject;
+  const decisionData = {
+    organizationId: input.organizationId,
+    decisionType: DecisionType.replenishment,
+    status: DecisionStatus.awaiting_approval,
+    automationTier: AutomationTier.recommend,
+    policyId: input.replenishmentPolicyId,
+    policyVersion: 1,
+    skuId: input.skuId,
+    locationId: input.locationId,
+    supplierId: input.supplierId,
+    confidenceScore: 0.88,
+    proposedPayload,
+    rationale,
+    createdByUserId: input.ownerUserId,
+    updatedAt: DEMO_REPLENISHMENT_RECORDED_AT,
+  };
+
+  await prisma.decision.upsert({
+    where: {
+      id: DEMO_REPLENISHMENT_DECISION_ID,
+    },
+    update: decisionData,
+    create: {
+      id: DEMO_REPLENISHMENT_DECISION_ID,
+      ...decisionData,
+      createdAt: DEMO_REPLENISHMENT_RECORDED_AT,
+    },
+  });
+
+  const reasons = [
+    {
+      id: "00000000-0000-0000-0000-00000000d511",
+      code: DecisionReasonCodes.forecastExceedsAvailableSupply,
+      message: "Forecast demand exceeds the currently available supply snapshot.",
+    },
+    {
+      id: "00000000-0000-0000-0000-00000000d512",
+      code: DecisionReasonCodes.openPurchaseOrderInsufficient,
+      message: "The open purchase order does not cover the projected shortfall.",
+    },
+  ] as const;
+
+  for (const reason of reasons) {
+    await prisma.decisionReason.upsert({
+      where: { id: reason.id },
+      update: {
+        decisionId: DEMO_REPLENISHMENT_DECISION_ID,
+        code: reason.code,
+        message: reason.message,
+      },
+      create: {
+        ...reason,
+        decisionId: DEMO_REPLENISHMENT_DECISION_ID,
+        createdAt: DEMO_REPLENISHMENT_RECORDED_AT,
+      },
+    });
+  }
+
+  const scores = [
+    { id: "00000000-0000-0000-0000-00000000d521", metric: "forecast_qty", value: 114 },
+    { id: "00000000-0000-0000-0000-00000000d522", metric: "open_purchase_order_qty", value: 48 },
+    { id: "00000000-0000-0000-0000-00000000d523", metric: "available_to_promise_qty", value: 102 },
+    { id: "00000000-0000-0000-0000-00000000d524", metric: "projected_shortfall_qty", value: 90 },
+    { id: "00000000-0000-0000-0000-00000000d525", metric: "recommended_order_qty", value: 96 },
+    { id: "00000000-0000-0000-0000-00000000d526", metric: "lead_time_days_used", value: 7 },
+  ] as const;
+
+  for (const score of scores) {
+    await prisma.decisionScore.upsert({
+      where: { id: score.id },
+      update: {
+        decisionId: DEMO_REPLENISHMENT_DECISION_ID,
+        metric: score.metric,
+        value: score.value,
+      },
+      create: {
+        ...score,
+        decisionId: DEMO_REPLENISHMENT_DECISION_ID,
+        createdAt: DEMO_REPLENISHMENT_RECORDED_AT,
+      },
+    });
+  }
+
+  const artifacts: Array<{
+    id: string;
+    artifactType: string;
+    payload: Prisma.InputJsonObject;
+  }> = [
+    {
+      id: "00000000-0000-0000-0000-00000000d531",
+      artifactType: DecisionArtifactTypes.inventorySnapshot,
+      payload: {
+        onHandQty: 96,
+        reservedQty: 6,
+        inTransitQty: 12,
+        availableToPromiseQty: 102,
+        safetyStockQty: 20,
+        reorderPointQty: 40,
+      },
+    },
+    {
+      id: "00000000-0000-0000-0000-00000000d532",
+      artifactType: DecisionArtifactTypes.forecastSnapshot,
+      payload: {
+        forecastHorizonDays: 14,
+        forecastQty: 114,
+        dailyAverageForecastQty: 8.14,
+        source: "deterministic_demo_seed",
+      },
+    },
+    {
+      id: "00000000-0000-0000-0000-00000000d533",
+      artifactType: DecisionArtifactTypes.supplySnapshot,
+      payload: {
+        supplierId: input.supplierId,
+        supplierSkuId: input.supplierSkuId,
+        minOrderQty: 1,
+        casePackQty: 12,
+        configuredLeadTimeDays: 7,
+        observedLeadTimeDays: 7,
+        openPurchaseOrderQty: 48,
+      },
+    },
+  ];
+
+  for (const artifact of artifacts) {
+    await prisma.decisionArtifact.upsert({
+      where: { id: artifact.id },
+      update: {
+        decisionId: DEMO_REPLENISHMENT_DECISION_ID,
+        artifactType: artifact.artifactType,
+        payload: artifact.payload,
+      },
+      create: {
+        ...artifact,
+        decisionId: DEMO_REPLENISHMENT_DECISION_ID,
+        createdAt: DEMO_REPLENISHMENT_RECORDED_AT,
+      },
+    });
+  }
+
+  await prisma.approvalTask.upsert({
+    where: {
+      id: DEMO_REPLENISHMENT_APPROVAL_ID,
+    },
+    update: {
+      organizationId: input.organizationId,
+      decisionId: DEMO_REPLENISHMENT_DECISION_ID,
+      purpose: ApprovalTaskPurpose.decision_review,
+      status: ApprovalTaskStatus.pending,
+      requestedByUserId: input.ownerUserId,
+      assignedToUserId: input.ownerUserId,
+      requestedAt: DEMO_REPLENISHMENT_RECORDED_AT,
+      decidedAt: null,
+      decidedByUserId: null,
+      comment: "Review the 96-unit replenishment recommendation before release.",
+      updatedAt: DEMO_REPLENISHMENT_RECORDED_AT,
+    },
+    create: {
+      id: DEMO_REPLENISHMENT_APPROVAL_ID,
+      organizationId: input.organizationId,
+      decisionId: DEMO_REPLENISHMENT_DECISION_ID,
+      purpose: ApprovalTaskPurpose.decision_review,
+      status: ApprovalTaskStatus.pending,
+      requestedByUserId: input.ownerUserId,
+      assignedToUserId: input.ownerUserId,
+      requestedAt: DEMO_REPLENISHMENT_RECORDED_AT,
+      comment: "Review the 96-unit replenishment recommendation before release.",
+      createdAt: DEMO_REPLENISHMENT_RECORDED_AT,
+      updatedAt: DEMO_REPLENISHMENT_RECORDED_AT,
+    },
+  });
 };
 
 export const seedDemoTenant = async (prisma: PrismaClient): Promise<DemoSeedResult> => {
@@ -793,6 +1026,16 @@ export const seedDemoTenant = async (prisma: PrismaClient): Promise<DemoSeedResu
     skuId: sku.id,
     locationId: location.id,
     supplierId: supplier.id,
+  });
+
+  await seedDemoReplenishmentDecision(prisma, {
+    organizationId: organization.id,
+    ownerUserId: owner.id,
+    skuId: sku.id,
+    locationId: location.id,
+    supplierId: supplier.id,
+    supplierSkuId: supplierSku.id,
+    replenishmentPolicyId: replenishmentPolicy.id,
   });
 
   return {

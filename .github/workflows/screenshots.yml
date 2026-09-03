@@ -6,6 +6,7 @@ on:
     branches: [main]
     paths:
       - .github/workflows/screenshots.yml
+      - apps/api/src/infrastructure/db/bootstrap-data.ts
 
 permissions:
   contents: read
