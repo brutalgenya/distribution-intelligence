@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 
 import { activeOrganizationMiddleware } from "../middleware/active-organization.js";
 
-export const registerObservabilityRoutes = async (app: FastifyInstance): Promise<void> => {
+export const registerPublicObservabilityRoutes = async (app: FastifyInstance): Promise<void> => {
   app.get("/observability/health", async (_request, reply) => {
     const health = await app.container.services.observabilityService.getHealth();
     reply.status(health.status === "ok" ? 200 : 503).send(health);
@@ -12,7 +12,9 @@ export const registerObservabilityRoutes = async (app: FastifyInstance): Promise
     const readiness = await app.container.services.observabilityService.getReadiness();
     reply.status(readiness.status === "ready" ? 200 : 503).send(readiness);
   });
+};
 
+export const registerObservabilityRoutes = async (app: FastifyInstance): Promise<void> => {
   await app.register(async (securedApp) => {
     securedApp.addHook("preHandler", activeOrganizationMiddleware);
 

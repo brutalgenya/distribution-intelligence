@@ -20,7 +20,10 @@ import { registerHealthRoutes } from "./infrastructure/http/routes/health-routes
 import { registerIntegrationsRoutes } from "./infrastructure/http/routes/integrations-routes.js";
 import { registerInventoryRoutes } from "./infrastructure/http/routes/inventory-routes.js";
 import { registerInvitationRoutes } from "./infrastructure/http/routes/invitation-routes.js";
-import { registerObservabilityRoutes } from "./infrastructure/http/routes/observability-routes.js";
+import {
+  registerObservabilityRoutes,
+  registerPublicObservabilityRoutes,
+} from "./infrastructure/http/routes/observability-routes.js";
 import { registerOrganizationRoutes } from "./infrastructure/http/routes/organization-routes.js";
 import { registerOutcomesRoutes } from "./infrastructure/http/routes/outcomes-routes.js";
 import { registerSupplyRoutes } from "./infrastructure/http/routes/supply-routes.js";
@@ -885,7 +888,7 @@ export const buildApp = async (options: BuildAppOptions = {}): Promise<FastifyIn
 
   await app.register(sensible);
   await registerHealthRoutes(app);
-  await registerObservabilityRoutes(app);
+  await registerPublicObservabilityRoutes(app);
 
   app.addHook("onRequest", async (request) => {
     const contentLengthHeader = request.headers["content-length"];
@@ -975,6 +978,7 @@ export const buildApp = async (options: BuildAppOptions = {}): Promise<FastifyIn
   await registerInventoryRoutes(app);
   await registerOrganizationRoutes(app);
   await registerInvitationRoutes(app);
+  await registerObservabilityRoutes(app);
   await registerOutcomesRoutes(app);
   await registerSupportRoutes(app);
   await registerSupplyRoutes(app);
