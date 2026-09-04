@@ -4,6 +4,14 @@ A portfolio-grade full-stack prototype for multi-tenant inventory operations. It
 
 > **Project status:** working prototype, not a production service. Authentication uses explicit demo headers, AI defaults to a deterministic mock provider, and ERP/WMS integrations are adapter-based demonstrations.
 
+## Working demo
+
+The Decision Inbox below is captured from a repeatable GitHub Actions run. The workflow provisions PostgreSQL, applies every migration, seeds tenant-scoped demo data, starts the API and React interface, and captures the running application in a browser.
+
+![Decision Inbox with a selected replenishment recommendation](docs/screenshots/decision-inbox.png)
+
+The selected recommendation records a 90-unit projected shortfall, rounds the proposed order to 96 units using a 12-unit case pack, assigns an 88% confidence score and routes the decision to human approval. The scenario is deterministic demo evidence rather than customer or production data. See the [screenshot workflow](.github/workflows/screenshots.yml) and [CI workflow](.github/workflows/ci.yml).
+
 ## What this repository demonstrates
 
 - TypeScript API built with Fastify, Prisma and PostgreSQL
